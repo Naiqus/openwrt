@@ -1,0 +1,76 @@
+name: Compile openwrt for cm520 with Opboot
+
+on: 
+  push:
+
+jobs:
+
+  compile:
+
+    name: Compile firmware and release
+    runs-on: ubuntu-latest
+    env:
+      VERSION: 21.02.1
+
+    steps:
+      - name: Checkout dts file repository
+        uses: actions/checkout@v2
+
+      - name: Copy dts file
+        run: |
+          set -x
+          cp qcom-ipq4019-cm520-79f.dts /tmp/
+
+      - name: Checkout Openwrt repository
+        uses: actions/checkout@v2
+        with:
+          repository: 'openwrt/openwrt'
+          ref: v${{ env.VERSION }}
+          
+      - name: Override custom dts file
+        run: |
+          set -x
+          rm target/linux/ipq40xx/files/arch/arm/boot/dts/qcom-ipq4019-cm520-79f.dts
+          cp /tmp/qcom-ipq4019-cm520-79f.dts target/linux/ipq40xx/files/arch/arm/boot/dts/qcom-ipq4019-cm520-79f.dts
+          cat target/linux/ipq40xx/files/arch/arm/boot/dts/qcom-ipq4019-cm520-79f.dts |grep 'bootargs-append' -A 5
+          cat target/linux/ipq40xx/files/arch/arm/boot/dts/qcom-ipq4019-cm520-79f.dts |grep 'nand@0' -A 30
+      
+      - name: Install dependencies
+        run: |
+          set -x
+          sudo apt update
+          sudo apt install -y build-essential ccache ecj fastjar file g++ gawk \
+          gettext git java-propose-classpath libelf-dev libncurses5-dev \
+          libncursesw5-dev libssl-dev python python2.7-dev python3 unzip wget \
+          python3-distutils python3-setuptools python3-dev rsync subversion \
+          swig time xsltproc zlib1g-dev 
+      
+      - name: Update feeds
+        run: |
+          set -x
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+      
+      - name: Get official .config file
+        run: |
+          set -x
+          wget https://downloads.openwrt.org/releases/$VERSION/targets/ipq40xx/generic/config.buildinfo -O .config
+      
+      - name: Compile firmware
+        run: |
+          set -x
+          make -j $(nproc) defconfig download clean world
+      
+      - name: Prepare artifact
+        run: |
+          set -x
+          tar -cvf ~/bin.tar ./bin
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: OpenWrt
+          path: |
+            ~/bin.tar
+            ./bin/targets/ipq40xx/generic/openwrt-21.02.1-ipq40xx-generic-mobipromo_cm520-79f-squashfs-nand-sysupgrade.bin
+          
