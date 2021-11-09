@@ -66,11 +66,17 @@ jobs:
           set -x
           tar -cvf ~/bin.tar ./bin
       
-      - name: Upload artifact
+      - name: Upload bundle artifact
         uses: actions/upload-artifact@master
         with:
-          name: OpenWrt
+          name: OpenWrt-ipq40xx-bundle
           path: |
             ~/bin.tar
+            
+      - name: Upload cm520 artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: OpenWrt-mobipromo_cm520-79f
+          path: |
             ./bin/targets/ipq40xx/generic/openwrt-21.02.1-ipq40xx-generic-mobipromo_cm520-79f-squashfs-nand-sysupgrade.bin
           
