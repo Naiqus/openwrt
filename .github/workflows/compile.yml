@@ -1,7 +1,8 @@
 name: Compile openwrt for cm520 with Opboot
 
 on: 
-  push:
+  on: workflow_dispatch
+  
 
 jobs:
 
